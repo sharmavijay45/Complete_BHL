@@ -11,6 +11,7 @@ from datetime import datetime
 from utils.logger import get_logger
 from utils.rag_client import rag_client
 from utils.groq_client import groq_client
+from utils.vaani_tools import vaani_tools
 from reinforcement.rl_context import RLContext
 
 logger = get_logger(__name__)
@@ -125,10 +126,50 @@ Spiritual Guidance:"""
             # Step 1: Get knowledge context from RAG API
             knowledge_context, sources = self._get_knowledge_context(query)
 
-            # Step 2: Enhance with Groq using Vedic wisdom persona
+            # Step 2: Check if Vaani tools are needed
+            vaani_used = False
+            vaani_data = {}
+
+            # Use Vaani for multilingual content if query mentions specific languages
+            if any(lang in query.lower() for lang in ["hindi", "sanskrit", "marathi", "gujarati", "tamil", "telugu", "kannada", "malayalam", "bengali"]):
+                logger.info("🌐 Using Vaani for multilingual spiritual content...")
+                target_languages = []
+                if "hindi" in query.lower():
+                    target_languages.append("hi")
+                if "sanskrit" in query.lower():
+                    target_languages.append("sa")
+                if "marathi" in query.lower():
+                    target_languages.append("mr")
+
+                if not target_languages:
+                    target_languages = ["hi", "sa"]  # Default to Hindi and Sanskrit
+
+                vaani_result = vaani_tools.generate_multilingual_content(
+                    query=query,
+                    target_languages=target_languages
+                )
+
+                if vaani_result.get("status") == "success":
+                    vaani_used = True
+                    vaani_data["multilingual"] = vaani_result
+
+            # Use Vaani for voice content if query mentions audio/speech
+            if any(word in query.lower() for word in ["voice", "audio", "speak", "pronounce", "chant", "mantra"]):
+                logger.info("🎵 Using Vaani for voice content generation...")
+                voice_result = vaani_tools.generate_voice_content(
+                    content=knowledge_context or query,
+                    language="hi",  # Default to Hindi for spiritual content
+                    tone="devotional"
+                )
+
+                if voice_result.get("status") == "success":
+                    vaani_used = True
+                    vaani_data["voice"] = voice_result
+
+            # Step 3: Enhance with Groq using Vedic wisdom persona
             enhanced_response, groq_used = self._enhance_with_groq(query, knowledge_context)
 
-            # Step 3: Log RL context
+            # Step 4: Log RL context
             self.rl_context.log_action(
                 task_id=task_id,
                 agent=self.name,
@@ -138,12 +179,13 @@ Spiritual Guidance:"""
                     "query": query,
                     "knowledge_retrieved": bool(knowledge_context),
                     "groq_enhanced": groq_used,
+                    "vaani_used": vaani_used,
                     "persona": self.persona,
                     "sources_count": len(sources)
                 }
             )
 
-            # Step 4: Prepare response with detailed sources
+            # Step 5: Prepare response with detailed sources and Vaani data
             response_data = {
                 "response": enhanced_response,
                 "query_id": task_id,
@@ -152,6 +194,7 @@ Spiritual Guidance:"""
                 "persona": self.persona,
                 "knowledge_context_used": bool(knowledge_context),
                 "groq_enhanced": groq_used,
+                "vaani_enhanced": vaani_used,
                 "sources": sources,  # Include detailed source information
                 "rag_data": {
                     "total_sources": len(sources),
@@ -159,16 +202,18 @@ Spiritual Guidance:"""
                     "knowledge_context_length": len(knowledge_context),
                     "has_groq_answer": groq_used
                 },
+                "vaani_data": vaani_data if vaani_used else None,
                 "timestamp": datetime.now().isoformat(),
                 "status": "success",
                 "metadata": {
                     "spiritual_keywords": [kw for kw in self.vedic_keywords if kw in query.lower()],
                     "guidance_type": "vedic_wisdom",
-                    "enhancement_method": "groq" if groq_used else "fallback"
+                    "enhancement_method": "groq" if groq_used else "fallback",
+                    "vaani_features_used": list(vaani_data.keys()) if vaani_used else []
                 }
             }
 
-            logger.info(f"✅ VedasAgent completed processing for task {task_id} with {len(sources)} sources")
+            logger.info(f"✅ VedasAgent completed processing for task {task_id} with {len(sources)} sources{' and Vaani tools' if vaani_used else ''}")
             return response_data
 
         except Exception as e:
@@ -182,6 +227,7 @@ Spiritual Guidance:"""
                 "agent": self.name,
                 "sources": [],
                 "rag_data": {"total_sources": 0, "method": "error", "error": str(e)},
+                "vaani_data": None,
                 "status": "error",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()

@@ -11,6 +11,7 @@ from datetime import datetime
 from utils.logger import get_logger
 from utils.rag_client import rag_client
 from utils.groq_client import groq_client
+from utils.vaani_tools import vaani_tools
 from reinforcement.rl_context import RLContext
 
 logger = get_logger(__name__)
@@ -126,10 +127,72 @@ Educational Guidance:"""
             # Step 1: Get educational context from RAG API
             knowledge_context, sources = self._get_knowledge_context(query)
 
-            # Step 2: Enhance with Groq using educational mentor persona
+            # Step 2: Check if Vaani tools are needed
+            vaani_used = False
+            vaani_data = {}
+
+            # Use Vaani for platform content if query mentions social media or platforms
+            if any(platform in query.lower() for platform in ["twitter", "instagram", "linkedin", "social media", "post", "share"]):
+                logger.info("📱 Using Vaani for platform-specific educational content...")
+                platforms = []
+                if "twitter" in query.lower():
+                    platforms.append("twitter")
+                if "instagram" in query.lower():
+                    platforms.append("instagram")
+                if "linkedin" in query.lower():
+                    platforms.append("linkedin")
+
+                if not platforms:
+                    platforms = ["twitter", "instagram", "linkedin"]
+
+                platform_result = vaani_tools.generate_platform_content(
+                    content=knowledge_context or query,
+                    platforms=platforms,
+                    tone="educational"
+                )
+
+                if platform_result.get("status") == "success":
+                    vaani_used = True
+                    vaani_data["platforms"] = platform_result
+
+            # Use Vaani for multilingual educational content
+            if any(lang in query.lower() for lang in ["hindi", "sanskrit", "marathi", "gujarati", "tamil", "telugu", "kannada", "malayalam", "bengali"]):
+                logger.info("🌐 Using Vaani for multilingual educational content...")
+                target_languages = []
+                if "hindi" in query.lower():
+                    target_languages.append("hi")
+                if "sanskrit" in query.lower():
+                    target_languages.append("sa")
+                if "marathi" in query.lower():
+                    target_languages.append("mr")
+
+                if not target_languages:
+                    target_languages = ["hi", "en"]
+
+                multilingual_result = vaani_tools.generate_multilingual_content(
+                    query=query,
+                    target_languages=target_languages
+                )
+
+                if multilingual_result.get("status") == "success":
+                    vaani_used = True
+                    vaani_data["multilingual"] = multilingual_result
+
+            # Use Vaani for content security analysis if query mentions safety or security
+            if any(word in query.lower() for word in ["safe", "security", "appropriate", "suitable", "check content"]):
+                logger.info("🔒 Using Vaani for educational content security analysis...")
+                security_result = vaani_tools.analyze_content_security(
+                    content=knowledge_context or query
+                )
+
+                if security_result.get("status") == "success":
+                    vaani_used = True
+                    vaani_data["security"] = security_result
+
+            # Step 3: Enhance with Groq using educational mentor persona
             enhanced_response, groq_used = self._enhance_with_groq(query, knowledge_context)
 
-            # Step 3: Log RL context
+            # Step 4: Log RL context
             self.rl_context.log_action(
                 task_id=task_id,
                 agent=self.name,
@@ -139,12 +202,13 @@ Educational Guidance:"""
                     "query": query,
                     "knowledge_retrieved": bool(knowledge_context),
                     "groq_enhanced": groq_used,
+                    "vaani_used": vaani_used,
                     "persona": self.persona,
                     "sources_count": len(sources)
                 }
             )
 
-            # Step 4: Prepare response with detailed sources
+            # Step 5: Prepare response with detailed sources and Vaani data
             response_data = {
                 "response": enhanced_response,
                 "query_id": task_id,
@@ -153,6 +217,7 @@ Educational Guidance:"""
                 "persona": self.persona,
                 "knowledge_context_used": bool(knowledge_context),
                 "groq_enhanced": groq_used,
+                "vaani_enhanced": vaani_used,
                 "sources": sources,  # Include detailed source information
                 "rag_data": {
                     "total_sources": len(sources),
@@ -160,12 +225,14 @@ Educational Guidance:"""
                     "knowledge_context_length": len(knowledge_context),
                     "has_groq_answer": groq_used
                 },
+                "vaani_data": vaani_data if vaani_used else None,
                 "timestamp": datetime.now().isoformat(),
                 "status": "success",
                 "metadata": {
                     "educational_keywords": [kw for kw in self.educational_keywords if kw in query.lower()],
                     "guidance_type": "educational_mentoring",
-                    "enhancement_method": "groq" if groq_used else "fallback"
+                    "enhancement_method": "groq" if groq_used else "fallback",
+                    "vaani_features_used": list(vaani_data.keys()) if vaani_used else []
                 }
             }
 

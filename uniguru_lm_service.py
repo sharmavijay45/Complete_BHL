@@ -108,9 +108,10 @@ class UniGuruConfig:
     ollama_url: str = os.getenv("OLLAMA_URL", "https://769d44eefc7c.ngrok-free.app/api/generate")
     ollama_model: str = os.getenv("OLLAMA_MODEL", "llama3.1")
     
-    # Vaani TTS Configuration
-    vaani_endpoint: str = os.getenv("VAANI_ENDPOINT", "http://localhost:8081/tts")
-    vaani_api_key: str = os.getenv("VAANI_API_KEY", "vaani-dev-key")
+    # Vaani Sentinel X Configuration
+    vaani_endpoint: str = os.getenv("VAANI_ENDPOINT", "https://vaani-sentinel-gs6x.onrender.com")
+    vaani_username: str = os.getenv("VAANI_USERNAME", "admin")
+    vaani_password: str = os.getenv("VAANI_PASSWORD", "secret")
     
     # Model Configuration
     embedding_model: str = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
@@ -513,61 +514,6 @@ class GeminiClient:
             logger.error(f"❌ Error calling Gemini: {e}")
             return "", False
 
-class VaaniTTSClient:
-    """Client for Vaani TTS service"""
-    
-    def __init__(self, config: UniGuruConfig):
-        self.config = config
-        self.endpoint = config.vaani_endpoint
-        self.api_key = config.vaani_api_key
-    
-    async def generate_audio(self, text: str, language: str = "hi", 
-                           voice: str = "female") -> Optional[str]:
-        """Generate audio using Vaani TTS"""
-        try:
-            # Mock TTS for development if Vaani not available
-            if os.getenv("MOCK_VAANI_TTS", "true").lower() == "true":
-                logger.info("🔊 Mock TTS: Audio generation simulated")
-                # Create a mock audio file path
-                audio_id = str(uuid.uuid4())
-                return f"/audio/{audio_id}.wav"
-            
-            payload = {
-                "text": text,
-                "language": language,
-                "voice": voice,
-                "format": "wav"
-            }
-            
-            headers = {
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            response = requests.post(
-                self.endpoint,
-                json=payload,
-                headers=headers,
-                timeout=30
-            )
-            
-            if response.status_code == 200:
-                # Save audio file
-                audio_id = str(uuid.uuid4())
-                audio_path = f"audio_cache/{audio_id}.wav"
-                os.makedirs("audio_cache", exist_ok=True)
-                
-                with open(audio_path, "wb") as f:
-                    f.write(response.content)
-                
-                return f"/audio/{audio_id}.wav"
-            else:
-                logger.error(f"❌ Vaani TTS error: {response.status_code}")
-                return None
-                
-        except Exception as e:
-            logger.error(f"❌ Error generating audio: {e}")
-            return None
 
 # =============================================================================
 # MongoDB Logger and RL Integration
@@ -656,12 +602,17 @@ class UniGuruLMService:
         self.config = UniGuruConfig()
         self.knowledge_manager = KnowledgeBaseManager(self.config)
         self.composer = IndigenousComposer()
-        self.tts_client = VaaniTTSClient(self.config)
+        # TTS client is now part of the comprehensive Vaani client
+        # self.tts_client = VaaniTTSClient(self.config)
         self.logger_service = UniGuruLogger(self.config)
 
         # Initialize LLM clients
         self.ollama_client = OllamaClient(self.config)
         self.gemini_client = GeminiClient(self.config)
+
+        # Initialize comprehensive Vaani client
+        from utils.vaani_client import VaaniClient
+        self.vaani_client = VaaniClient(self.config)
 
         # Initialize GRU model (mock for now)
         self.gru_model = None
@@ -669,6 +620,7 @@ class UniGuruLMService:
         logger.info("✅ UniGuru-LM Service initialized successfully")
         logger.info(f"🤖 Available LLMs: Ollama ({self.config.ollama_model}), Gemini ({'✅' if self.config.gemini_api_key else '❌'})")
         logger.info(f"📚 Knowledge Base: RAG API ({self.config.api_key[:10]}...)")
+        logger.info(f"🎵 Vaani Integration: {'✅' if self.vaani_client.token else '❌'}")
     
     async def compose(self, request: ComposeRequest) -> ComposeResponse:
         """Main compose endpoint logic"""
@@ -704,9 +656,9 @@ class UniGuruLMService:
             # Step 4: Generate Audio (if enabled)
             audio_url = None
             if request.voice_enabled:
-                logger.info("🔊 Generating audio...")
+                logger.info("🔊 Generating audio using Vaani...")
                 language = self.composer.detect_language(final_text)
-                audio_url = await self.tts_client.generate_audio(final_text, language)
+                audio_url = await self.vaani_client.generate_audio(final_text, language)
             
             # Step 5: Prepare response
             processing_time = int((time.time() - start_time) * 1000)

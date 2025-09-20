@@ -19,7 +19,7 @@ class GroqClient:
     def __init__(self, api_key: str = None, base_url: str = None):
         self.api_key = api_key or os.getenv("GROQ_API_KEY", "")
         self.base_url = base_url or "https://api.groq.com/openai/v1"
-        self.model = os.getenv("GROQ_MODEL", "llama3-8b-8192")
+        self.model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant")
         self.timeout = int(os.getenv("GROQ_TIMEOUT", "30"))
         self.max_retries = int(os.getenv("GROQ_MAX_RETRIES", "3"))
         self.retry_delay = float(os.getenv("GROQ_RETRY_DELAY", "1.0"))

@@ -8,11 +8,13 @@ An advanced multi-modal AI pipeline with reinforcement learning, knowledge-base 
 ### Key Features
 - Multi-modal processing: text, PDF, image, audio
 - Knowledge-aware responses: External RAG API with Groq-powered answers and comprehensive knowledge retrieval
+- **Vaani Sentinel X Integration**: Multilingual content generation, platform adaptation, voice synthesis, and security analysis
 - Reinforcement learning: adaptive agent/model selection with logging and analytics
 - Web UI: authenticated uploads, dashboard, and downloads
 - CLI: single/batch processing with JSON/Text/CSV output
 - Health, metrics, MongoDB logging, and retry/error handling
 - External RAG API integration for enhanced knowledge base queries
+- **Intelligent Agent Tools**: Agents automatically use Vaani features based on query context
 
 ### What's New
 - **Multi-Folder Vector Search**: Search across all Qdrant data folders simultaneously
@@ -20,6 +22,7 @@ An advanced multi-modal AI pipeline with reinforcement learning, knowledge-base 
 - **Comprehensive Knowledge Retrieval**: Access all your knowledge with a single query
 - **Smart Fallback Mechanisms**: Automatic fallback to alternative retrieval methods
 - **Health Monitoring**: Improved diagnostics and status reporting
+- **Vaani Sentinel X Integration**: Complete AI content generation suite with multilingual support
 
 ### Architecture
 ```
@@ -226,6 +229,102 @@ This indicates:
 - The RAG API client is properly configured
 - Connection to external RAG service is established
 - System is ready for enhanced knowledge retrieval
+
+## Vaani Sentinel X Integration
+The system now integrates with **Vaani Sentinel X** - a comprehensive AI content generation platform with multilingual support, platform adaptation, voice synthesis, and security analysis.
+
+### Vaani Features Available to Agents
+
+#### 🎯 **Multilingual Content Generation**
+- Generate content in **10+ Indian languages** (Hindi, Sanskrit, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Bengali)
+- Automatic language detection and translation
+- Cultural context preservation
+
+#### 📱 **Platform-Specific Content**
+- **Twitter**: Optimized for 280-character limit with hashtags
+- **Instagram**: Engaging captions with emojis and calls-to-action
+- **LinkedIn**: Professional content with industry insights
+- **Spotify**: Audio content integration
+
+#### 🎵 **Voice Content Generation**
+- Generate audio content with different tones:
+  - **Devotional**: For spiritual and wellness content
+  - **Educational**: Clear and informative delivery
+  - **Uplifting**: Motivational and positive content
+- Multiple voice options (male/female, regional accents)
+
+#### 🔒 **Content Security Analysis**
+- Automatic profanity and sensitive content detection
+- Risk assessment for different platforms
+- Content safety recommendations
+- Compliance checking for various regions
+
+#### 📊 **Analytics & Insights**
+- Engagement metrics prediction
+- Performance insights for different content types
+- Platform-specific optimization suggestions
+
+### How Agents Use Vaani Tools
+
+Agents automatically detect when Vaani features are needed based on query context:
+
+#### 🕉️ **VedasAgent Triggers:**
+- **"Explain in Hindi/Sanskrit"** → Multilingual spiritual content
+- **"Voice chanting/mantra"** → Devotional voice generation
+- **"Share on social media"** → Platform-adapted spiritual content
+
+#### 🎓 **EduMentorAgent Triggers:**
+- **"Create for Twitter/Instagram"** → Platform-specific educational content
+- **"In Hindi/Marathi"** → Multilingual educational materials
+- **"Safe for students"** → Content security analysis
+
+#### 🌿 **WellnessAgent Triggers:**
+- **"Guided meditation"** → Voice wellness content
+- **"Share on Instagram"** → Uplifting wellness posts
+- **"Mental health support"** → Secure, sensitive content handling
+
+### Vaani Integration Response Format
+```json
+{
+  "response": "Enhanced answer with spiritual wisdom...",
+  "vaani_enhanced": true,
+  "vaani_data": {
+    "multilingual": {
+      "original_content": "Spiritual guidance...",
+      "translations": {
+        "hi": "आध्यात्मिक मार्गदर्शन...",
+        "sa": "आध्यात्मिक मार्गदर्शन..."
+      }
+    },
+    "voice": {
+      "language": "hi",
+      "tone": "devotional",
+      "voice_tag": "hi_in_female_devotional"
+    }
+  },
+  "metadata": {
+    "vaani_features_used": ["multilingual", "voice"]
+  }
+}
+```
+
+### Vaani Configuration
+Add to your `.env` file:
+```env
+# Vaani Sentinel X Configuration
+VAANI_USERNAME=admin
+VAANI_PASSWORD=secret
+VAANI_ENDPOINT=https://vaani-sentinel-gs6x.onrender.com
+```
+
+### Testing Vaani Integration
+```bash
+# Test Vaani tools
+python test_vaani_integration.py
+
+# Test with specific agent
+python cli_runner.py explain "dharma in Hindi with voice" vedas_agent
+```
 
 Notes
 - Start Simple API on port 8001 to match `agent_configs.json` and `MODEL_CONFIG` endpoints.
