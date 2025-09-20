@@ -1,48 +1,197 @@
 📋 API Key: uniguru-dev-key-2025
-### BHIV Core - Third Installment
+### BHIV Core - Ultimate AI Agent System
 
-An advanced multi-modal AI pipeline with reinforcement learning, knowledge-base retrieval (multi-folder vector search + NAS + FAISS + file retriever), a production-ready FastAPI layer, web interface, and an enhanced CLI.
+An advanced multi-modal AI pipeline featuring **Vaani Sentinel X integration**, external RAG API with Groq-powered answers, reinforcement learning, comprehensive knowledge retrieval, production-ready FastAPI services, web interface, and enhanced CLI.
 
-> **Note:** If you see a '0 vector stores' message during startup, this is normal when no FAISS indices are present. The system will automatically fall back to other retrieval methods in the multi-folder vector search pipeline.
+> **Note:** This system integrates multiple AI technologies including Groq, Gemini, Ollama, and Vaani Sentinel X for comprehensive content generation and knowledge retrieval.
 
 ### Key Features
-- Multi-modal processing: text, PDF, image, audio
-- Knowledge-aware responses: External RAG API with Groq-powered answers and comprehensive knowledge retrieval
-- **Vaani Sentinel X Integration**: Multilingual content generation, platform adaptation, voice synthesis, and security analysis
-- Reinforcement learning: adaptive agent/model selection with logging and analytics
-- Web UI: authenticated uploads, dashboard, and downloads
-- CLI: single/batch processing with JSON/Text/CSV output
-- Health, metrics, MongoDB logging, and retry/error handling
-- External RAG API integration for enhanced knowledge base queries
-- **Intelligent Agent Tools**: Agents automatically use Vaani features based on query context
+- **🤖 Multi-Agent System**: Specialized agents for education, wellness, spiritual guidance, and knowledge retrieval
+- **🌐 Vaani Sentinel X Integration**: Complete AI content generation suite with multilingual support, platform adaptation, voice synthesis, and security analysis
+- **🧠 External RAG API + Groq**: Advanced knowledge retrieval with AI-powered answers
+- **🎯 Reinforcement Learning**: Adaptive agent/model selection with comprehensive logging and analytics
+- **📱 Multi-Modal Processing**: Text, PDF, image, audio, and voice content generation
+- **🔄 Intelligent Fallbacks**: Robust fallback mechanisms for all services
+- **📊 Web Dashboard**: Authenticated uploads, real-time monitoring, and analytics
+- **💻 Enhanced CLI**: Single/batch processing with multiple output formats
+- **🛡️ Production Ready**: Health monitoring, MongoDB logging, error handling, and Docker deployment
+- **🎵 Voice Integration**: Real-time voice content generation with multiple languages and tones
+- **🔒 Content Security**: Automatic safety analysis and compliance checking
 
-### What's New
-- **Multi-Folder Vector Search**: Search across all Qdrant data folders simultaneously
-- **Intelligent Result Ranking**: Results prioritized by relevance and folder recency
-- **Comprehensive Knowledge Retrieval**: Access all your knowledge with a single query
-- **Smart Fallback Mechanisms**: Automatic fallback to alternative retrieval methods
-- **Health Monitoring**: Improved diagnostics and status reporting
-- **Vaani Sentinel X Integration**: Complete AI content generation suite with multilingual support
+### What's New in Latest Version
+- **🤖 Advanced Multi-Agent System**: Specialized agents with intelligent Vaani tool integration
+- **🌐 Vaani Sentinel X Integration**: Complete AI content generation with 10+ languages, platform adaptation, voice synthesis
+- **🧠 Groq + External RAG API**: AI-powered knowledge retrieval with intelligent answers
+- **🎵 Real-Time Voice Generation**: Multiple languages, tones, and voice options
+- **🔒 Content Security Analysis**: Automatic safety checking and compliance
+- **📱 Platform-Optimized Content**: Twitter, Instagram, LinkedIn, Spotify integration
+- **🎯 Intelligent Agent Selection**: RL-powered agent routing based on query context
+- **📊 Enhanced Analytics**: Comprehensive logging, performance metrics, and insights
+- **🔄 Robust Fallback System**: Multiple fallback layers for all services
+- **🚀 Production-Ready Architecture**: Docker deployment, health monitoring, error handling
 
 ### Architecture
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Interface │    │   CLI Runner    │    │  Simple API     │
-│   (Port 8003)   │    │  (Enhanced)     │    │  (Port 8001)    │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-          │                       │                       │
-          └──────────────┬────────┴──────────────┬────────┘
-                         │                       │
-                    ┌───────────────┐       ┌───────────────┐
-                    │  MCP Bridge   │       │  External RAG │
-                    │  (Port 8002)  │       │  API + Groq   │
-                    └───────────────┘       └───────────────┘
-                               │
-                  ┌────────────┴────────────┐
-                  │  Agent Registry + RL    │
-                  │  (text/pdf/image/audio) │
-                  └──────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                        🌐 BHIV Core System                          │
+├─────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────┐     │
+│  │  Web Interface  │  │   CLI Runner    │  │  Simple API     │     │
+│  │   (Port 8003)   │  │  (Enhanced)     │  │  (Port 8001)    │     │
+│  └─────────────────┘  └─────────────────┘  └─────────────────┘     │
+│           │                        │                        │      │
+│           └─────────────┬───────────┴────────────┬───────────┘      │
+│                         │                        │                  │
+│            ┌────────────▼────────────┐  ┌────────▼────────────┐     │
+│            │      MCP Bridge         │  │   External RAG      │     │
+│            │    (Port 8002)          │  │   API + Groq        │     │
+│            │  ┌─────────────────┐    │  │  ┌─────────────┐    │     │
+│            │  │ Agent Registry  │    │  │  │  Knowledge  │    │     │
+│            │  │     + RL        │    │  │  │  Retrieval  │    │     │
+│            │  └─────────────────┘    │  │  └─────────────┘    │     │
+│            └─────────────────────────┘  └─────────────────────┘     │
+│                         │                                           │
+│            ┌────────────▼────────────────────────────────────────────┐
+│            │                 🤖 MULTI-AGENT SYSTEM                  │
+│            ├─────────────────────────────────────────────────────────┤
+│            │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│            │  │ 🕉️ Vedas    │  │ 🎓 EduMentor │  │ 🌿 Wellness │     │
+│            │  │   Agent     │  │   Agent      │  │   Agent     │     │
+│            │  └─────────────┘  └─────────────┘  └─────────────┘     │
+│            │                                                         │
+│            │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│            │  │ 📚 Knowledge │  │ 🖼️ Image     │  │ 🎵 Audio     │     │
+│            │  │   Agent     │  │   Agent      │  │   Agent     │     │
+│            │  └─────────────┘  └─────────────┘  └─────────────┘     │
+│            └─────────────────────────────────────────────────────────┘
+│                         │                                           │
+│            ┌────────────▼────────────────────────────────────────────┐
+│            │            🎯 VAANI SENTINEL X INTEGRATION              │
+│            ├─────────────────────────────────────────────────────────┤
+│            │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│            │  │ 🌐 Multi-   │  │ 📱 Platform │  │ 🎵 Voice     │     │
+│            │  │   lingual   │  │   Content   │  │   Content   │     │
+│            │  └─────────────┘  └─────────────┘  └─────────────┘     │
+│            │                                                         │
+│            │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│            │  │ 🔒 Security  │  │ 📊 Analytics│  │ 🎯 Auto-    │     │
+│            │  │   Analysis   │  │   & Insights│  │   Detection │     │
+│            │  └─────────────┘  └─────────────┘  └─────────────┘     │
+│            └─────────────────────────────────────────────────────────┘
+│                         │                                           │
+│            ┌────────────▼────────────────────────────────────────────┐
+│            │              🔧 SUPPORTING INFRASTRUCTURE               │
+│            ├─────────────────────────────────────────────────────────┤
+│            │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐     │
+│            │  │ 🗄️ MongoDB  │  │ 📝 Logging  │  │ 🔄 RL       │     │
+│            │  │   Storage   │  │   System    │  │   Engine    │     │
+│            │  └─────────────┘  └─────────────┘  └─────────────┘     │
+│            └─────────────────────────────────────────────────────────┘
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+## 🤖 Agent System Overview
+
+### Core Agents
+
+#### 🕉️ **VedasAgent**
+**Purpose**: Spiritual guidance and Vedic wisdom
+**Capabilities**:
+- Multilingual spiritual content (Hindi, Sanskrit, Marathi)
+- Devotional voice generation for mantras and chants
+- Platform-adapted spiritual posts for social media
+- Cultural context preservation and translation
+- Sacred text analysis and interpretation
+
+**Usage Examples**:
+```bash
+# Spiritual guidance in Hindi with voice
+python cli_runner.py explain "dharma in Hindi with devotional voice" vedas_agent
+
+# Social media spiritual content
+python cli_runner.py create "Share Bhagavad Gita wisdom on Instagram" vedas_agent
+```
+
+#### 🎓 **EduMentorAgent**
+**Purpose**: Educational content creation and learning support
+**Capabilities**:
+- Platform-specific educational content (Twitter, Instagram, LinkedIn)
+- Multilingual educational materials (10+ Indian languages)
+- Content security analysis for student safety
+- Interactive learning content generation
+- Academic content adaptation
+
+**Usage Examples**:
+```bash
+# Educational content for Twitter
+python cli_runner.py explain "Machine learning basics for Twitter" edumentor_agent
+
+# Safe educational content
+python cli_runner.py create "Student-safe AI explanation in Hindi" edumentor_agent
+```
+
+#### 🌿 **WellnessAgent**
+**Purpose**: Mental health and wellness guidance
+**Capabilities**:
+- Guided meditation voice content generation
+- Uplifting wellness posts for social media
+- Secure mental health content handling
+- Stress management and mindfulness content
+- Holistic wellness recommendations
+
+**Usage Examples**:
+```bash
+# Guided meditation with voice
+python cli_runner.py create "Guided meditation for stress relief" wellness_agent
+
+# Wellness content for Instagram
+python cli_runner.py explain "Daily wellness tips for Instagram" wellness_agent
+```
+
+#### 📚 **KnowledgeAgent**
+**Purpose**: Comprehensive knowledge retrieval and analysis
+**Capabilities**:
+- External RAG API integration with Groq enhancement
+- Multi-source knowledge synthesis
+- Intelligent answer generation
+- Fallback to file-based retrieval
+- Cross-domain knowledge integration
+
+**Usage Examples**:
+```bash
+# Knowledge retrieval with AI enhancement
+python cli_runner.py query "Explain quantum computing" knowledge_agent
+
+# Multi-source analysis
+python cli_runner.py analyze "Compare different AI approaches" knowledge_agent
+```
+
+#### 🖼️ **ImageAgent**
+**Purpose**: Image analysis and description
+**Capabilities**:
+- Advanced image understanding
+- Detailed image descriptions
+- Visual content analysis
+- Image-based learning content
+- Accessibility support
+
+#### 🎵 **AudioAgent**
+**Purpose**: Audio processing and transcription
+**Capabilities**:
+- Speech-to-text transcription
+- Audio content analysis
+- Voice synthesis integration
+- Audio-based learning content
+- Multi-language audio processing
+
+### Agent Selection Intelligence
+
+The system uses **Reinforcement Learning** to automatically select the best agent based on:
+- **Query Content Analysis**: Keywords, context, and intent detection
+- **Language Detection**: Automatic language routing for multilingual content
+- **Platform Requirements**: Social media platform optimization
+- **Content Type**: Text, voice, or multimedia requirements
+- **Security Context**: Safe content generation for sensitive topics
 
 ## Quick Start
 
@@ -71,12 +220,20 @@ cp .env.example .env
 #### 2. Configure Your API Keys
 Edit the `.env` file and add your actual API keys:
 ```env
-# Required API Keys
+# 🤖 Required AI API Keys
 GROQ_API_KEY=gsk_your_actual_groq_key_here
 GEMINI_API_KEY=AIzaSy_your_actual_gemini_key_here
 
-# Optional API Keys
+# 🔄 Optional API Keys (for fallback)
 GEMINI_API_KEY_BACKUP=your_backup_gemini_key_here
+OLLAMA_URL=http://localhost:11434/api/generate
+OLLAMA_MODEL=llama3.1
+
+# 🎯 Vaani Sentinel X Configuration
+VAANI_USERNAME=admin
+VAANI_PASSWORD=secret
+VAANI_ENDPOINT=https://vaani-sentinel-gs6x.onrender.com
+MOCK_VAANI_TTS=false
 ```
 
 #### 3. Configure Other Settings
@@ -125,19 +282,56 @@ python integration/web_interface.py  # serves on port 8003
 
 ## Usage
 
-### CLI
+### CLI Usage Examples
+
+#### 🤖 **Multi-Agent CLI Commands**
+
 ```bash
-# Text
-python cli_runner.py summarize "Explain artificial intelligence" edumentor_agent --input-type text
+# 🕉️ Vedas Agent - Spiritual Content
+python cli_runner.py explain "dharma in Hindi with devotional voice" vedas_agent
+python cli_runner.py create "Bhagavad Gita wisdom for Instagram" vedas_agent
+python cli_runner.py translate "spiritual guidance in Sanskrit" vedas_agent
 
-# Single file (auto-detect type)
-python cli_runner.py summarize "Analyze this file" edumentor_agent --file sample_documents/ayurveda_basics.txt
+# 🎓 EduMentor Agent - Educational Content
+python cli_runner.py explain "machine learning for Twitter" edumentor_agent
+python cli_runner.py create "AI basics in Hindi for students" edumentor_agent
+python cli_runner.py analyze "safe educational content" edumentor_agent
 
-# Batch directory → save CSV
-python cli_runner.py summarize "Process folder" edumentor_agent --batch ./sample_documents --output results.csv --output-format csv
+# 🌿 Wellness Agent - Wellness Content
+python cli_runner.py create "guided meditation for stress" wellness_agent
+python cli_runner.py explain "mindfulness tips for Instagram" wellness_agent
+python cli_runner.py generate "uplifting wellness voice content" wellness_agent
 
-# RL options
-python cli_runner.py summarize "Learning test" edumentor_agent --use-rl --rl-stats --exploration-rate 0.3
+# 📚 Knowledge Agent - Knowledge Retrieval
+python cli_runner.py query "quantum computing explained" knowledge_agent
+python cli_runner.py analyze "compare AI approaches" knowledge_agent
+python cli_runner.py search "latest research in machine learning" knowledge_agent
+
+# 🖼️ Image Agent - Visual Content
+python cli_runner.py analyze "describe this image" image_agent --file image.jpg
+python cli_runner.py process "educational diagram analysis" image_agent
+
+# 🎵 Audio Agent - Audio Processing
+python cli_runner.py transcribe "convert speech to text" audio_agent --file audio.wav
+python cli_runner.py process "audio content analysis" audio_agent
+```
+
+#### 📊 **Advanced CLI Options**
+
+```bash
+# Multi-format output
+python cli_runner.py explain "AI concepts" edumentor_agent --output results.json --output-format json
+python cli_runner.py create "content" vedas_agent --output results.csv --output-format csv
+
+# Batch processing with Vaani features
+python cli_runner.py process "folder" knowledge_agent --batch ./documents --multilingual --voice
+
+# RL-powered agent selection
+python cli_runner.py auto "explain quantum physics in simple terms" --use-rl --rl-stats
+
+# Platform-specific content generation
+python cli_runner.py create "educational content for LinkedIn" edumentor_agent --platform linkedin
+python cli_runner.py generate "spiritual post for Instagram" vedas_agent --platform instagram
 ```
 
 ### MCP Bridge API (port 8002)
@@ -153,22 +347,71 @@ curl -X POST http://localhost:8002/handle_multi_task \
   -d '{"files":[{"path":"test.pdf","type":"pdf","data":"Analyze"}],"agent":"edumentor_agent","task_type":"summarize"}'
 ```
 
-### Simple API (port 8001)
+### Simple API Endpoints (port 8001)
+
+#### 🤖 **Agent-Specific Endpoints**
+
 ```bash
-# Vedas
-curl -X POST http://localhost:8001/ask-vedas -H "Content-Type: application/json" -d '{"query":"what is dharma"}'
+# 🕉️ Vedas Agent - Spiritual Guidance
+curl -X POST http://localhost:8001/ask-vedas \
+  -H "Content-Type: application/json" \
+  -d '{"query":"what is dharma", "language":"hi", "voice_enabled":true}'
 
-# Educational
-curl -X POST http://localhost:8001/edumentor -H "Content-Type: application/json" -d '{"query":"explain reinforcement learning"}'
+# 🎓 EduMentor Agent - Educational Content
+curl -X POST http://localhost:8001/edumentor \
+  -H "Content-Type: application/json" \
+  -d '{"query":"explain AI", "platform":"twitter", "language":"hi"}'
 
-# Wellness
-curl -X POST http://localhost:8001/wellness -H "Content-Type: application/json" -d '{"query":"how to reduce stress"}'
+# 🌿 Wellness Agent - Wellness Guidance
+curl -X POST http://localhost:8001/wellness \
+  -H "Content-Type: application/json" \
+  -d '{"query":"stress relief", "voice_enabled":true, "tone":"calm"}'
 
-# Knowledge Base (uses NAS → FAISS → file retriever fallback)
-curl -X POST http://localhost:8001/query-kb -H "Content-Type: application/json" -d '{"query":"agent architecture"}'
+# 📚 Knowledge Agent - Knowledge Retrieval
+curl -X POST http://localhost:8001/query-kb \
+  -H "Content-Type: application/json" \
+  -d '{"query":"machine learning", "max_results":5}'
+```
 
-# Health
+#### 🎯 **Vaani Integration Endpoints**
+
+```bash
+# 🌐 Multilingual Content Generation
+curl -X POST http://localhost:8001/vaani/multilingual \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world", "target_languages":["hi","sa","mr"]}'
+
+# 📱 Platform Content Generation
+curl -X POST http://localhost:8001/vaani/platform \
+  -H "Content-Type: application/json" \
+  -d '{"content":"AI explanation", "platform":"instagram", "tone":"educational"}'
+
+# 🎵 Voice Content Generation
+curl -X POST http://localhost:8001/vaani/voice \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Meditation guide", "language":"hi", "tone":"devotional"}'
+
+# 🔒 Content Security Analysis
+curl -X POST http://localhost:8001/vaani/security \
+  -H "Content-Type: application/json" \
+  -d '{"content":"Educational material for analysis"}'
+```
+
+#### 📊 **System Endpoints**
+
+```bash
+# Health Check with Component Status
 curl http://localhost:8001/health
+
+# System Statistics
+curl -X GET http://localhost:8001/stats \
+  -H "X-API-Key: uniguru-dev-key-2025"
+
+# Agent Status
+curl http://localhost:8001/agents/status
+
+# Vaani Integration Status
+curl http://localhost:8001/vaani/status
 ```
 
 ### Web Interface (port 8003)
@@ -337,36 +580,281 @@ pytest -q
 pytest tests/test_web_interface_integration.py -q
 ```
 
-## Troubleshooting
-- Check health:
-  - `http://localhost:8002/health` (MCP Bridge)
-  - `http://localhost:8001/health` (Simple API)
-- Ports in use on Windows:
-  - `netstat -ano | findstr :8001`
-  - `netstat -ano | findstr :8002`
-  - `netstat -ano | findstr :8003`
-- RAG API issues:
-  - Verify `.env` has `RAG_API_URL` configured correctly
-  - Check that the RAG API endpoint is accessible: `curl https://819d053306f2.ngrok-free.app/rag`
-  - Run `python test_rag_integration.py` to test the RAG API functionality
-  - Check startup logs for "✅ RAG API client initialized successfully"
-  - If RAG API fails, the system falls back to file-based retriever
-- Increase timeouts via environment or `config/settings.py` if API calls stall.
-- To test RAG API integration: `python test_rag_integration.py`
+## 🔧 Troubleshooting Guide
 
-## What's New in Latest Update
-- **External RAG API Integration**: Comprehensive knowledge retrieval with Groq-powered answers
-- **Enhanced Response Quality**: Direct access to AI-generated answers instead of generic responses
-- **Simplified Architecture**: Removed complex NAS/Qdrant dependencies for cleaner codebase
-- **Unified Simple API**: All endpoints now use RAG API for consistent knowledge retrieval
-- **Reinforcement Learning**: Enhanced RL system working with external RAG API
-- **Improved Fallbacks**: Robust fallback mechanisms when RAG API is unavailable
+### 🤖 **Agent System Issues**
 
-—
+#### Agent Not Responding
+```bash
+# Check agent status
+curl http://localhost:8001/agents/status
 
-For advanced usage and deployment, see:
-- `docs/complete_usage_guide.md`
-- `docs/deployment.md`
-- `example/quick_setup_guide.md`
-- `utils/rag_client.py` - RAG API integration details
-- `test_rag_integration.py` - Integration testing examples
+# Test specific agent
+python cli_runner.py test "hello" vedas_agent
+
+# Check agent configuration
+python -c "from agents.agent_registry import agent_registry; print(agent_registry.list_agents())"
+```
+
+#### Vaani Integration Problems
+```bash
+# Test Vaani connection
+python test_vaani_integration.py
+
+# Check Vaani status
+curl http://localhost:8001/vaani/status
+
+# Verify Vaani credentials in .env
+cat .env | grep VAANI
+```
+
+### 🌐 **API & Service Issues**
+
+#### Service Health Checks
+```bash
+# Check all services
+curl http://localhost:8001/health    # Simple API
+curl http://localhost:8002/health    # MCP Bridge
+curl http://localhost:8003/          # Web Interface
+
+# Check component status
+curl http://localhost:8001/health | jq .components
+```
+
+#### Port Conflicts (Windows)
+```powershell
+# Check port usage
+netstat -ano | findstr :8001
+netstat -ano | findstr :8002
+netstat -ano | findstr :8003
+
+# Kill process using port (replace PID)
+taskkill /PID <PID> /F
+```
+
+### 🧠 **AI & RAG Issues**
+
+#### RAG API Problems
+```bash
+# Test RAG API connectivity
+curl https://819d053306f2.ngrok-free.app/rag
+
+# Run RAG integration test
+python test_rag_integration.py
+
+# Check RAG configuration
+cat .env | grep RAG
+```
+
+#### LLM API Issues
+```bash
+# Test Groq API
+python -c "from utils.groq_client import groq_client; print(groq_client.test_connection())"
+
+# Test Gemini API
+python -c "from utils.gemini_client import gemini_client; print(gemini_client.test_connection())"
+
+# Check API keys
+cat .env | grep -E "(GROQ|GEMINI)_API_KEY"
+```
+
+### 📊 **Database & Logging Issues**
+
+#### MongoDB Connection
+```bash
+# Test MongoDB connection
+python -c "from pymongo import MongoClient; client = MongoClient('mongodb://localhost:27017'); print(client.admin.command('ping'))"
+
+# Check MongoDB logs
+# Windows: Check MongoDB service status
+Get-Service MongoDB
+
+# Linux/Mac: Check MongoDB status
+brew services list | grep mongodb
+```
+
+#### Logging Issues
+```bash
+# Check log files
+ls -la logs/
+tail -f logs/blackhole_$(date +%Y%m%d).log
+
+# Test logging system
+python -c "from utils.logger import get_logger; logger = get_logger('test'); logger.info('Test log')"
+```
+
+### 🎯 **Performance Issues**
+
+#### Slow Responses
+```bash
+# Check system resources
+# Windows
+Get-Process | Sort-Object CPU -Descending | Select-Object -First 10
+
+# Linux/Mac
+top -o %CPU
+
+# Check API timeouts
+cat config/settings.py | grep TIMEOUT
+```
+
+#### Memory Issues
+```bash
+# Check memory usage
+# Windows
+Get-Process | Sort-Object WS -Descending | Select-Object -First 10
+
+# Linux/Mac
+ps aux --sort=-%mem | head
+
+# Clear caches
+python -c "import gc; gc.collect()"
+```
+
+### 🔄 **Common Error Solutions**
+
+#### "VaaniTTSClient not defined"
+- ✅ **Fixed**: Import structure updated
+- **Solution**: Restart services after code changes
+
+#### "RAG API connection failed"
+- **Check**: `.env` file has correct `RAG_API_URL`
+- **Test**: `curl https://819d053306f2.ngrok-free.app/rag`
+- **Fallback**: System automatically uses file-based retriever
+
+#### "Agent selection failed"
+- **Check**: RL configuration in `config/settings.py`
+- **Test**: `python cli_runner.py auto "test query" --use-rl`
+- **Reset**: Clear RL logs in `logs/` directory
+
+#### "Port already in use"
+- **Find**: `netstat -ano | findstr :PORT`
+- **Kill**: `taskkill /PID <PID> /F`
+- **Alternative**: Use different ports in configuration
+
+### 🚀 **Quick Recovery Commands**
+
+```bash
+# Full system restart
+# Stop all services (Ctrl+C in terminals)
+
+# Restart in order
+python simple_api.py --port 8001          # Terminal 1
+python mcp_bridge.py                      # Terminal 2
+python integration/web_interface.py       # Terminal 3
+
+# Quick health check
+curl http://localhost:8001/health && echo "✅ API OK"
+curl http://localhost:8002/health && echo "✅ Bridge OK"
+
+# Test full pipeline
+python cli_runner.py explain "test query" vedas_agent
+```
+
+## 🚀 What's New in Latest Update
+
+### 🤖 **Advanced Multi-Agent System**
+- **Specialized Agents**: VedasAgent, EduMentorAgent, WellnessAgent, KnowledgeAgent, ImageAgent, AudioAgent
+- **Intelligent Agent Selection**: RL-powered routing based on query context and content type
+- **Agent-Specific Capabilities**: Each agent optimized for its domain with Vaani tool integration
+
+### 🌐 **Vaani Sentinel X Integration**
+- **Complete AI Content Suite**: Multilingual generation, platform adaptation, voice synthesis, security analysis
+- **10+ Indian Languages**: Hindi, Sanskrit, Marathi, Gujarati, Tamil, Telugu, Kannada, Malayalam, Bengali
+- **Platform Optimization**: Twitter, Instagram, LinkedIn, Spotify content adaptation
+- **Voice Generation**: Multiple tones (devotional, educational, uplifting) and voice options
+- **Content Security**: Automatic safety analysis and compliance checking
+
+### 🧠 **Enhanced AI Capabilities**
+- **Groq Integration**: High-performance AI responses for knowledge enhancement
+- **External RAG API**: Comprehensive knowledge retrieval with intelligent answers
+- **Multi-LLM Support**: Groq, Gemini, Ollama with automatic fallback
+- **Context-Aware Responses**: AI understands query intent and provides relevant answers
+
+### 🔧 **System Improvements**
+- **Production-Ready Architecture**: Docker deployment, health monitoring, comprehensive logging
+- **Robust Fallback System**: Multiple fallback layers for all services and APIs
+- **Enhanced Error Handling**: Graceful degradation and user-friendly error messages
+- **Performance Optimization**: Async processing, connection pooling, caching mechanisms
+
+### 📊 **Analytics & Monitoring**
+- **Comprehensive Logging**: MongoDB-based logging with detailed trace information
+- **Real-Time Metrics**: Performance monitoring, usage statistics, agent performance
+- **RL Analytics**: Learning progress tracking, agent selection statistics
+- **Health Monitoring**: System health checks, component status, error tracking
+
+### 🎯 **Developer Experience**
+- **Enhanced CLI**: Rich command-line interface with agent-specific commands
+- **Comprehensive API**: RESTful APIs for all agent interactions
+- **Testing Framework**: Automated testing for all components and integrations
+- **Documentation**: Complete API documentation and usage examples
+
+## 📚 Documentation & Resources
+
+### 📖 **Core Documentation**
+- `docs/complete_usage_guide.md` - Comprehensive usage guide
+- `docs/deployment.md` - Production deployment guide
+- `docs/agent_commands.md` - Agent-specific command reference
+- `docs/reinforcement.md` - RL system documentation
+
+### 🔧 **Technical References**
+- `utils/rag_client.py` - External RAG API integration
+- `utils/groq_client.py` - Groq AI client implementation
+- `utils/vaani_client.py` - Vaani Sentinel X integration
+- `agents/agent_registry.py` - Agent management system
+- `config/settings.py` - System configuration
+
+### 🧪 **Testing & Examples**
+- `test_agent_system.py` - Agent system testing
+- `test_vaani_integration.py` - Vaani integration testing
+- `test_rag_integration.py` - RAG API testing
+- `example/` - Usage examples and templates
+
+### 🚀 **Quick Start Resources**
+- `QUICK_START.md` - Fast setup guide
+- `example/quick_setup_guide.md` - Step-by-step setup
+- `smoke_test.sh` - System validation script
+
+## 🎯 System Capabilities Summary
+
+### 🤖 **Multi-Agent Intelligence**
+- **6 Specialized Agents**: Vedas, EduMentor, Wellness, Knowledge, Image, Audio
+- **Intelligent Routing**: RL-powered agent selection based on context
+- **Vaani Integration**: Automatic tool usage based on query requirements
+
+### 🌐 **Vaani Sentinel X Features**
+- **10+ Languages**: Complete Indian language support
+- **4 Platforms**: Twitter, Instagram, LinkedIn, Spotify optimization
+- **Voice Synthesis**: Multiple tones and voice options
+- **Security Analysis**: Content safety and compliance
+- **Analytics**: Performance insights and recommendations
+
+### 🧠 **AI & Knowledge Systems**
+- **Groq Integration**: High-performance AI responses
+- **External RAG API**: Comprehensive knowledge retrieval
+- **Multi-LLM Support**: Groq, Gemini, Ollama with fallbacks
+- **Intelligent Answers**: Context-aware response generation
+
+### 🛡️ **Production Features**
+- **Health Monitoring**: Comprehensive system health checks
+- **Error Handling**: Graceful degradation and recovery
+- **Logging**: Detailed MongoDB-based logging system
+- **Docker Support**: Containerized deployment ready
+- **Security**: API key authentication and content safety
+
+## 🚀 **Ready for Production**
+
+Your **BHIV Core Ultimate AI Agent System** is now fully operational with:
+
+✅ **Complete Vaani Sentinel X Integration**
+✅ **Advanced Multi-Agent System**
+✅ **Groq + External RAG API**
+✅ **Production-Ready Architecture**
+✅ **Comprehensive Documentation**
+✅ **Robust Testing Framework**
+
+**Start using your AI agents today! 🎉**
+
+---
+
+*Built with ❤️ for the future of AI-powered content creation and knowledge systems*
