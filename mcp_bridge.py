@@ -459,9 +459,9 @@ import asyncio
 import json
 import time
 from datetime import datetime
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from agents.agent_registry import agent_registry
 from agents.agent_orchestrator import AgentOrchestrator
 from utils.logger import get_logger
@@ -515,6 +515,13 @@ class QueryPayload(BaseModel):
     filters: Dict[str, Any] = None
     task_id: str = None
     tags: List[str] = ["semantic_search"]
+
+class FeedbackPayload(BaseModel):
+    task_id: str
+    rating: int = Field(..., ge=1, le=5, description="Rating from 1-5")
+    feedback_text: Optional[str] = None
+    useful: bool = True
+    agent_used: Optional[str] = None
 
 async def handle_task_request(payload: TaskPayload) -> dict:
     """Handle task request with agent routing."""
@@ -794,6 +801,57 @@ async def query_knowledge_base(payload: QueryPayload):
             "task_id": task_id,
             "agent_output": error_output
         }
+
+@app.post("/feedback")
+async def submit_feedback(feedback: FeedbackPayload):
+    """Submit feedback for RL learning and agent improvement."""
+    try:
+        logger.info(f"[FEEDBACK] Task ID: {feedback.task_id} | Rating: {feedback.rating} | Useful: {feedback.useful}")
+
+        # Store feedback in MongoDB
+        feedback_data = {
+            "task_id": feedback.task_id,
+            "rating": feedback.rating,
+            "feedback_text": feedback.feedback_text,
+            "useful": feedback.useful,
+            "agent_used": feedback.agent_used,
+            "timestamp": datetime.now(),
+            "source": "mcp_bridge"
+        }
+
+        result = await mongo_collection.insert_one(feedback_data)
+
+        # Update RL weights based on feedback
+        if feedback.rating and feedback.useful is not None:
+            reward = (feedback.rating / 5.0) * (1.0 if feedback.useful else -1.0)  # Scale reward based on usefulness
+
+            rl_context.log_action(
+                task_id=feedback.task_id,
+                agent=feedback.agent_used or "unknown",
+                model="none",
+                action="feedback_received",
+                metadata={
+                    "rating": feedback.rating,
+                    "useful": feedback.useful,
+                    "reward": reward,
+                    "feedback_text": feedback.feedback_text
+                }
+            )
+
+            # Update agent selector history based on feedback
+            if feedback.agent_used:
+                agent_registry.agent_selector.update_history(feedback.task_id, feedback.agent_used, reward)
+
+        logger.info(f"[FEEDBACK] Processed feedback for task {feedback.task_id} with reward: {reward if 'reward' in locals() else 'N/A'}")
+        return {
+            "status": "success",
+            "feedback_id": str(result.inserted_id),
+            "message": "Feedback recorded successfully"
+        }
+
+    except Exception as e:
+        logger.error(f"[FEEDBACK] Error processing feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Feedback processing failed: {str(e)}")
 
 @app.get("/health")
 async def health_check():

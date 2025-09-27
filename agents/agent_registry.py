@@ -145,42 +145,81 @@ class AgentRegistry:
     
     def find_agent(self, task_context: Dict[str, Any]) -> str:
         """Find appropriate agent based on task context with RL support."""
+        import random
         task_id = task_context.get("task_id", str(uuid.uuid4()))
         task = task_context.get("task", "summarize")
 
         # Check if user explicitly requested a specific agent
         requested_agent = task_context.get('agent') or task_context.get('model')
-        if requested_agent and self.is_agent_available(requested_agent):
-            logger.info(f"✅ User requested agent: {requested_agent}")
+        user_requested = bool(requested_agent and self.is_agent_available(requested_agent))
+
+        # Use RL-based selection if enabled in settings
+        from config.settings import RL_CONFIG
+        use_rl = RL_CONFIG.get("use_rl", False)
+        exploration_rate = RL_CONFIG.get("exploration_rate", 0.2)
+
+        rl_selected_agent = None
+        if use_rl:
+            rl_selected_agent = self.agent_selector.select_agent(task_context)
+            if self.is_agent_available(rl_selected_agent):
+                self.rl_context.log_action(
+                    task_id=task_id,
+                    agent=rl_selected_agent,
+                    model="none",
+                    action="rl_agent_selection",
+                    metadata={"task": task, "input_type": task_context.get("input_type", "text")}
+                )
+
+        # Decision logic: RL can override user request based on exploration rate
+        final_agent = requested_agent if user_requested else rl_selected_agent
+
+        if use_rl and user_requested and rl_selected_agent and rl_selected_agent != requested_agent:
+            # Allow RL to override user request with exploration probability
+            if random.random() < exploration_rate:
+                final_agent = rl_selected_agent
+                logger.info(f"🎲 RL EXPLORATION: Overriding user request '{requested_agent}' with RL selection '{rl_selected_agent}'")
+                self.rl_context.log_action(
+                    task_id=task_id,
+                    agent=final_agent,
+                    model="none",
+                    action="rl_override_user_request",
+                    metadata={"original_request": requested_agent, "rl_selection": rl_selected_agent, "exploration": True}
+                )
+            else:
+                logger.info(f"✅ Respecting user request: {requested_agent} (RL suggested: {rl_selected_agent})")
+                self.rl_context.log_action(
+                    task_id=task_id,
+                    agent=final_agent,
+                    model="none",
+                    action="user_request_respected",
+                    metadata={"user_request": requested_agent, "rl_suggestion": rl_selected_agent}
+                )
+        elif rl_selected_agent and not user_requested:
+            final_agent = rl_selected_agent
+            logger.info(f"🤖 RL selected agent: {final_agent} for task: {task}")
+        elif user_requested:
+            final_agent = requested_agent
+            logger.info(f"👤 User requested agent: {final_agent}")
             self.rl_context.log_action(
                 task_id=task_id,
-                agent=requested_agent,
+                agent=final_agent,
                 model="none",
                 action="user_selected_agent",
                 metadata={"task": task, "user_requested": True}
             )
-            return requested_agent
 
-        # Use RL-based selection if enabled in settings and no explicit request
-        from config.settings import RL_CONFIG
-        use_rl = RL_CONFIG.get("use_rl", False)
+        # If still no agent selected, fallback to deterministic routing
+        if not final_agent:
+            final_agent = self._fallback_agent_selection(task_context, task_id)
 
-        if use_rl:
-            selected_agent = self.agent_selector.select_agent(task_context)
-            self.rl_context.log_action(
-                task_id=task_id,
-                agent=selected_agent,
-                model="none",
-                action="select_agent",
-                metadata={"task": task, "input_type": task_context.get("input_type", "text")}
-            )
-            if self.is_agent_available(selected_agent):
-                logger.info(f"RL selected agent: {selected_agent} for task: {task}")
-                return selected_agent
+        return final_agent
+
+    def _fallback_agent_selection(self, task_context: Dict[str, Any], task_id: str) -> str:
+        """Fallback agent selection when RL and user request fail."""
+        task = task_context.get("task", "summarize")
 
         # Fallback to deterministic routing
         if isinstance(task_context, str):
-            # If passed a string, treat it as agent name
             return task_context
 
         # Extract agent from task context (default to edumentor_agent)

@@ -290,11 +290,9 @@ Answer:"""
             # Get recent RL logs for this task
             rl_logs = []
             try:
-                # Get recent RL actions for this task_id
-                recent_actions = list(self.rl_context.collection.find(
-                    {"task_id": task_id},
-                    {"_id": 0, "timestamp": 1, "agent": 1, "action": 1, "metadata": 1}
-                ).sort("timestamp", -1).limit(5))
+                # Get recent RL actions for this task_id from in-memory storage
+                recent_actions = [action for action in self.rl_context.actions
+                                if action.get("task_id") == task_id][-5:]  # Last 5 actions for this task
 
                 rl_logs = [{
                     "timestamp": action.get("timestamp"),
