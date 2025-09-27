@@ -21,7 +21,7 @@ class KnowledgeAgent:
         self.rag_client = rag_client
         logger.info("✅ KnowledgeAgent initialized with RAG API client")
     
-    def query(self, query_text: str, top_k: int = 5) -> Dict[str, Any]:
+    def query(self, query_text: str, top_k: int = 5, agent_filter: str = None) -> Dict[str, Any]:
         """
         Query knowledge base using external RAG API.
 
@@ -35,8 +35,11 @@ class KnowledgeAgent:
         logger.info(f"🔍 KnowledgeAgent query: '{query_text}'")
 
         try:
-            # Query the external RAG API
-            rag_result = self.rag_client.query(query_text, top_k=top_k)
+            # Apply agent-specific filtering to the query
+            filtered_query = self._apply_agent_filter(query_text, agent_filter)
+
+            # Query the external RAG API with filtered query
+            rag_result = self.rag_client.query(filtered_query, top_k=top_k)
 
             if rag_result["status"] == 200 and rag_result.get("response"):
                 # Extract content from chunks
@@ -105,6 +108,45 @@ class KnowledgeAgent:
         return {
             "rag_client": self.rag_client.health_check()["status"] == "healthy"
         }
+
+    def _apply_agent_filter(self, query_text: str, agent_filter: str = None) -> str:
+        """Apply agent-specific filtering to the query."""
+        if not agent_filter:
+            return query_text
+
+        # Agent-specific query modifications
+        agent_filters = {
+            "vedas_agent": [
+                "vedas", "vedic", "hindu scripture", "sanskrit", "mantra", "yajna",
+                "brahman", "karma", "dharma", "samsara", "moksha", "bhagavad gita",
+                "upanishad", "purana", "ramayana", "mahabharata", "spiritual wisdom"
+            ],
+            "wellness_agent": [
+                "wellness", "health", "yoga", "meditation", "ayurveda", "pranayama",
+                "mindfulness", "stress relief", "holistic health", "natural healing",
+                "spiritual wellness", "mental health", "physical health", "emotional balance"
+            ],
+            "edumentor_agent": [
+                "education", "learning", "teaching", "study", "academic", "knowledge",
+                "curriculum", "pedagogy", "educational technology", "student development"
+            ],
+            "knowledge_agent": [
+                "semantic search", "information retrieval", "knowledge base",
+                "data mining", "information extraction", "content analysis"
+            ]
+        }
+
+        # Get filter terms for the agent
+        filter_terms = agent_filters.get(agent_filter, [])
+
+        if filter_terms:
+            # Enhance query with agent-specific terms
+            enhanced_query = f"{query_text} {' '.join(filter_terms[:3])}"  # Add top 3 relevant terms
+            logger.info(f"🔍 Applied {agent_filter} filter to query: '{query_text}' -> '{enhanced_query}'")
+            return enhanced_query
+        else:
+            logger.info(f"🔍 No specific filter for agent: {agent_filter}")
+            return query_text
 
     def enhance_with_llm(self, query: str, knowledge_context: str, groq_answer: str = None) -> str:
         """Enhanced response using Groq answer from RAG API or Ollama fallback."""

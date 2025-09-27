@@ -17,48 +17,91 @@ class VaaniClient:
 
     def __init__(self, config=None):
         self.config = config
-        self.base_url = "https://vaani-sentinel-gs6x.onrender.com"
-        self.username = "admin"  # Fixed credentials as per user specification
-        self.password = "secret"  # Fixed credentials as per user specification
+        # Use localhost as per documentation, fallback to environment
+        self.base_url = os.getenv("VAANI_ENDPOINT", "http://localhost:8000")
+        self.username = os.getenv("VAANI_USERNAME", "admin")
+        self.password = os.getenv("VAANI_PASSWORD", "secret")
+        self.api_key = os.getenv("VAANI_API_KEY", "")
         self.token = None
         self.session = requests.Session()
-        self._authenticate()
+        self.authenticated = False
+
+        # Try authentication, but don't fail if it doesn't work
+        try:
+            self._authenticate()
+        except Exception as e:
+            logger.warning(f"⚠️ Vaani authentication failed during init: {str(e)}")
+            logger.info("🔄 Vaani client will work in fallback mode")
 
     def _authenticate(self):
-        """Authenticate with Vaani and get JWT token"""
+        """Authenticate with Vaani and get JWT token - Following API documentation"""
         try:
+            # Try JWT token authentication first if API key is available
+            if self.api_key:
+                self.session.headers.update({
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json"
+                })
+                self.token = self.api_key
+                self.authenticated = True
+                logger.info("✅ Vaani authenticated with API key")
+                return
+
+            # Try username/password authentication following documentation
             auth_url = f"{self.base_url}/api/v1/auth/login"
             payload = {
                 "username": self.username,
                 "password": self.password
             }
 
+            logger.info(f"🔐 Attempting Vaani authentication with username: {self.username}")
+            logger.info(f"🌐 Auth URL: {auth_url}")
+
             response = self.session.post(auth_url, json=payload, timeout=30)
+
+            logger.info(f"📡 Auth response status: {response.status_code}")
 
             if response.status_code == 200:
                 data = response.json()
+                logger.info(f"📄 Auth response data: {data}")
+
                 self.token = data.get("access_token")
-                self.session.headers.update({
-                    "Authorization": f"Bearer {self.token}",
-                    "Content-Type": "application/json"
-                })
-                logger.info("✅ Vaani authentication successful")
+                if self.token:
+                    # Set authorization header as per documentation
+                    self.session.headers.update({
+                        "Authorization": f"Bearer {self.token}",
+                        "Content-Type": "application/json"
+                    })
+                    self.authenticated = True
+                    logger.info("✅ Vaani authentication successful")
+                    logger.info(f"🎫 Token received: {self.token[:20]}...")
+                else:
+                    logger.error("❌ Vaani authentication response missing access_token")
+                    logger.error(f"📄 Full response: {data}")
+                    self.authenticated = False
             else:
-                logger.error(f"❌ Vaani authentication failed: {response.status_code}")
-                self.token = None
+                logger.warning(f"⚠️ Vaani authentication failed: {response.status_code}")
+                try:
+                    error_data = response.json()
+                    logger.warning(f"❌ Auth error details: {error_data}")
+                except:
+                    logger.warning(f"❌ Auth error text: {response.text[:200]}")
+                logger.info("🔄 Vaani client will work in fallback mode")
+                self.authenticated = False
 
         except Exception as e:
-            logger.error(f"❌ Vaani authentication error: {str(e)}")
-            self.token = None
+            logger.warning(f"⚠️ Vaani authentication error: {str(e)}")
+            logger.info("🔄 Vaani client will work in fallback mode")
+            self.authenticated = False
 
     def _ensure_authenticated(self):
         """Ensure we have a valid token"""
-        if not self.token:
+        if not self.authenticated:
             self._authenticate()
 
     def _create_content_first(self, text: str, content_type: str = "tweet",
-                             language: str = "en") -> Optional[str]:
-        """Create content first as required by Vaani API - Based on documentation"""
+                              language: str = "en") -> Optional[str]:
+        """Create content first as required by Vaani API - Following documentation exactly"""
         try:
             create_url = f"{self.base_url}/api/v1/content/create"
             payload = {
@@ -70,48 +113,59 @@ class VaaniClient:
 
             logger.info(f"📝 Creating content with type: {content_type}, language: {language}")
             logger.info(f"📄 Content preview: {text[:100]}...")
+            logger.info(f"🔗 Create URL: {create_url}")
+            logger.info(f"📨 Payload: {payload}")
 
             response = self.session.post(create_url, json=payload, timeout=30)
 
             logger.info(f"📡 Content creation response status: {response.status_code}")
+            logger.info(f"📡 Response headers: {dict(response.headers)}")
 
             if response.status_code == 200:
                 data = response.json()
-                content_id = data.get("content_id")
+                logger.info(f"📄 Full response data: {data}")
 
+                content_id = data.get("content_id") or data.get("id")
                 if content_id:
                     logger.info(f"✅ Content created successfully with ID: {content_id}")
                     logger.info(f"📊 Content details: type={content_type}, language={language}")
                     return content_id
                 else:
-                    logger.error("❌ Content creation response missing content_id")
-                    logger.error(f"📄 Full response: {data}")
+                    logger.error("❌ Content creation response missing content_id or id")
+                    logger.error(f"📄 Available keys: {list(data.keys())}")
                     return None
             else:
                 # Log detailed error information
+                logger.error(f"❌ Content creation failed with status {response.status_code}")
                 try:
                     error_details = response.json()
-                    logger.error(f"❌ Content creation failed: {error_details}")
+                    logger.error(f"❌ Error details: {error_details}")
                     logger.error(f"❌ Error detail: {error_details.get('detail', 'No detail provided')}")
                 except:
-                    logger.error(f"❌ Content creation failed (no JSON): {response.text[:500]}")
+                    logger.error(f"❌ Raw error response: {response.text[:500]}")
 
                 return None
 
         except Exception as e:
             logger.error(f"❌ Content creation error: {str(e)}")
+            import traceback
+            logger.error(f"❌ Full traceback: {traceback.format_exc()}")
             return None
 
     def generate_content(self, text: str, platforms: List[str] = None,
                         tone: str = "neutral", language: str = "en") -> Dict[str, Any]:
         """Generate platform-specific content using Vaani - Based on API documentation"""
-        self._ensure_authenticated()
+        # Check if we're authenticated, if not, provide fallback
+        if not self.authenticated:
+            logger.warning("⚠️ Vaani not authenticated, using fallback content generation")
+            return self._generate_fallback_content(text, platforms, tone, language)
 
         try:
             # First create content
             content_id = self._create_content_first(text, "tweet", language)
             if not content_id:
-                return {"error": "Failed to create content"}
+                logger.warning("⚠️ Failed to create content, using fallback")
+                return self._generate_fallback_content(text, platforms, tone, language)
 
             # Use the exact API structure from documentation
             generate_url = f"{self.base_url}/api/v1/agents/generate-content"
@@ -153,11 +207,73 @@ class VaaniClient:
                 except:
                     logger.error(f"❌ Vaani API error (no JSON): {generate_response.text[:500]}")
 
-                return {"error": f"Content generation failed with status {generate_response.status_code}"}
+                logger.warning("⚠️ Vaani API failed, using fallback content generation")
+                return self._generate_fallback_content(text, platforms, tone, language)
 
         except Exception as e:
             logger.error(f"❌ Vaani content generation error: {str(e)}")
-            return {"error": str(e)}
+            logger.warning("⚠️ Using fallback content generation")
+            return self._generate_fallback_content(text, platforms, tone, language)
+
+    def _generate_fallback_content(self, text: str, platforms: List[str] = None,
+                                  tone: str = "neutral", language: str = "en") -> Dict[str, Any]:
+        """Generate fallback content when Vaani API is not available"""
+        try:
+            platforms = platforms or ["twitter", "instagram", "linkedin"]
+
+            # Simple content adaptation based on platform
+            generated_content = {}
+
+            for platform in platforms:
+                if platform.lower() == "twitter":
+                    # Twitter has character limits
+                    content = text[:240] if len(text) > 240 else text
+                    generated_content["twitter"] = {
+                        "content": content,
+                        "tone": tone,
+                        "language": language,
+                        "platform": "twitter",
+                        "character_count": len(content)
+                    }
+                elif platform.lower() == "instagram":
+                    # Instagram can be longer
+                    content = text
+                    generated_content["instagram"] = {
+                        "content": content,
+                        "tone": tone,
+                        "language": language,
+                        "platform": "instagram",
+                        "hashtags": ["#AI", "#Technology"]  # Add some default hashtags
+                    }
+                elif platform.lower() == "linkedin":
+                    # LinkedIn professional tone
+                    content = f"Professional Insight: {text}"
+                    generated_content["linkedin"] = {
+                        "content": content,
+                        "tone": "professional",
+                        "language": language,
+                        "platform": "linkedin"
+                    }
+                else:
+                    # Generic content for other platforms
+                    generated_content[platform] = {
+                        "content": text,
+                        "tone": tone,
+                        "language": language,
+                        "platform": platform
+                    }
+
+            logger.info(f"✅ Generated fallback content for platforms: {list(generated_content.keys())}")
+
+            return {
+                "generated_content": generated_content,
+                "fallback": True,
+                "message": "Content generated using fallback method - Vaani API not available"
+            }
+
+        except Exception as e:
+            logger.error(f"❌ Fallback content generation error: {str(e)}")
+            return {"error": f"Fallback content generation failed: {str(e)}"}
 
     def translate_content(self, text: str, target_languages: List[str],
                         tone: str = "neutral") -> Dict[str, Any]:

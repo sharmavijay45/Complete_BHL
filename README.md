@@ -414,6 +414,47 @@ curl http://localhost:8001/agents/status
 curl http://localhost:8001/vaani/status
 ```
 
+### 🤖 **Agent Orchestrator API (Port 8080)**
+
+The Agent Orchestrator provides intelligent agent routing and coordination with automatic intent classification.
+
+```bash
+# 🎯 Intelligent Query Processing with Auto Agent Selection
+curl -X POST "http://localhost:8080/ask" \
+  -H "X-API-Key: uniguru-dev-key-2025" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Summarize the key concepts of machine learning",
+    "user_id": "user123",
+    "session_id": "session456",
+    "input_type": "text"
+  }'
+
+# 🚨 System Alerts and Flagged Activities
+curl -X GET "http://localhost:8080/alerts?limit=5&flagged_only=true" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+
+# 📋 User Consent Management
+# Get consent status
+curl -X GET "http://localhost:8080/consent?user_id=user123" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+
+# Update consent
+curl -X POST "http://localhost:8080/consent" \
+  -H "X-API-Key: uniguru-dev-key-2025" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user_id": "user123",
+    "consent_type": "privacy_policy",
+    "granted": true,
+    "consent_details": "User agreed to privacy policy v1.0"
+  }'
+
+# 🔍 Agent Health and Status
+curl -X GET "http://localhost:8080/agents/status" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+```
+
 ### Web Interface (port 8003)
 - Login with Basic Auth (`admin/secret` or `user/secret`)
 - Upload files at `/` → processed via MCP Bridge

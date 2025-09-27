@@ -1062,6 +1062,294 @@ async def smoke_test():
     return test_results
 
 # =============================================================================
+# Agent Orchestrator Integration
+# =============================================================================
+
+# Import the AgentOrchestrator
+from agents.agent_orchestrator import AgentOrchestrator
+
+# Initialize orchestrator
+orchestrator = AgentOrchestrator()
+
+# Pydantic models for new endpoints
+class AskRequest(BaseModel):
+    query: str = Field(..., description="User query for agent processing")
+    user_id: str = Field(default="anonymous", description="User identifier")
+    session_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="Session identifier")
+    input_type: str = Field(default="text", description="Input type: text or voice")
+
+class AskResponse(BaseModel):
+    response: str
+    agent_used: str
+    intent_detected: str
+    confidence_score: float
+    processing_time_ms: int
+    trace_id: str
+    session_id: str
+    timestamp: str
+    metadata: Dict[str, Any] = {}
+
+class ConsentRequest(BaseModel):
+    user_id: str = Field(..., description="User identifier")
+    consent_type: str = Field(..., description="Type of consent: privacy, data_processing, etc.")
+    granted: bool = Field(..., description="Whether consent is granted or revoked")
+    consent_details: Optional[str] = Field(None, description="Additional consent details")
+
+class ConsentResponse(BaseModel):
+    user_id: str
+    consent_type: str
+    granted: bool
+    timestamp: str
+    consent_id: str
+
+# =============================================================================
+# New API Endpoints
+# =============================================================================
+
+@app.post("/ask", response_model=AskResponse)
+async def ask_endpoint(
+    request: AskRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """Intelligent query processing with agent orchestration"""
+    start_time = time.time()
+
+    try:
+        logger.info(f"🤖 Processing ask request: '{request.query[:100]}...'")
+
+        # Process query through orchestrator
+        result = orchestrator.process_query(
+            query=request.query,
+            task_id=str(uuid.uuid4())
+        )
+
+        processing_time = int((time.time() - start_time) * 1000)
+
+        # Format response
+        response = AskResponse(
+            response=result.get("response", ""),
+            agent_used=result.get("agent", "unknown"),
+            intent_detected=result.get("detected_intent", "unknown"),
+            confidence_score=result.get("intent_classification", {}).get("confidence_score", 0.0),
+            processing_time_ms=processing_time,
+            trace_id=result.get("query_id", str(uuid.uuid4())),
+            session_id=request.session_id,
+            timestamp=datetime.now().isoformat(),
+            metadata={
+                "orchestrator_processed": result.get("orchestrator_processed", False),
+                "low_confidence_fallback": result.get("low_confidence_fallback", False),
+                "original_intent": result.get("original_intent"),
+                "status": result.get("status", "unknown")
+            }
+        )
+
+        logger.info(f"✅ Ask request completed - routed to {response.agent_used}")
+        return response
+
+    except Exception as e:
+        logger.error(f"❌ Error in ask endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ask processing failed: {str(e)}")
+
+@app.get("/alerts")
+async def alerts_endpoint(
+    api_key: str = Depends(verify_api_key),
+    limit: int = 10,
+    flagged_only: bool = True
+):
+    """Get system alerts and flagged activities"""
+    try:
+        logger.info("🚨 Fetching system alerts")
+
+        # Get recent traces with potential issues
+        alerts = []
+
+        # Query for traces with errors or low confidence
+        try:
+            error_traces = list(service.logger_service.traces_collection.find(
+                {
+                    "$or": [
+                        {"response.status": "error"},
+                        {"response.confidence_score": {"$lt": 0.3}},
+                        {"steps.step": "compose", "steps.grounded": False}
+                    ]
+                },
+                {"_id": 0}
+            ).sort("timestamp", -1).limit(limit))
+
+            for trace in error_traces:
+                alerts.append({
+                    "alert_id": trace.get("trace_id", str(uuid.uuid4())),
+                    "type": "processing_issue",
+                    "severity": "medium" if trace.get("response", {}).get("status") == "error" else "low",
+                    "message": f"Processing issue in trace {trace.get('trace_id', 'unknown')}",
+                    "query": trace.get("query", "")[:100],
+                    "confidence": trace.get("response", {}).get("confidence_score", 0),
+                    "timestamp": trace.get("timestamp", datetime.now().isoformat()),
+                    "details": {
+                        "status": trace.get("response", {}).get("status"),
+                        "grounded": any(step.get("grounded", False) for step in trace.get("steps", [])),
+                        "processing_time": trace.get("processing_time_ms", 0)
+                    }
+                })
+
+        except Exception as e:
+            logger.warning(f"Could not fetch error traces: {e}")
+
+        # Add system health alerts
+        try:
+            health = await health()
+            if health["status"] != "healthy":
+                alerts.append({
+                    "alert_id": f"health-{datetime.now().isoformat()}",
+                    "type": "system_health",
+                    "severity": "high",
+                    "message": "System health issues detected",
+                    "timestamp": datetime.now().isoformat(),
+                    "details": health
+                })
+        except Exception as e:
+            logger.warning(f"Could not check system health: {e}")
+
+        # Filter for flagged only if requested
+        if flagged_only:
+            alerts = [alert for alert in alerts if alert["severity"] in ["high", "medium"]]
+
+        # Sort by timestamp (most recent first)
+        alerts.sort(key=lambda x: x["timestamp"], reverse=True)
+
+        return {
+            "alerts": alerts[:limit],
+            "total_count": len(alerts),
+            "flagged_only": flagged_only,
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Error in alerts endpoint: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Alerts retrieval failed: {str(e)}")
+
+@app.get("/consent")
+async def get_consent(
+    user_id: str,
+    api_key: str = Depends(verify_api_key)
+):
+    """Get user consent status"""
+    try:
+        logger.info(f"📋 Checking consent status for user: {user_id}")
+
+        # In a real implementation, this would query a consent database
+        # For now, return mock consent status
+        consent_status = {
+            "user_id": user_id,
+            "privacy_policy": {
+                "granted": True,
+                "timestamp": "2025-01-01T00:00:00.000000",
+                "version": "1.0"
+            },
+            "data_processing": {
+                "granted": True,
+                "timestamp": "2025-01-01T00:00:00.000000",
+                "purpose": "AI model training and improvement"
+            },
+            "analytics": {
+                "granted": False,
+                "timestamp": None,
+                "purpose": "Usage analytics and performance monitoring"
+            }
+        }
+
+        return {
+            "user_id": user_id,
+            "consent_status": consent_status,
+            "last_updated": datetime.now().isoformat(),
+            "compliance_status": "compliant"
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Error getting consent: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Consent retrieval failed: {str(e)}")
+
+@app.post("/consent", response_model=ConsentResponse)
+async def update_consent(
+    request: ConsentRequest,
+    api_key: str = Depends(verify_api_key)
+):
+    """Update user consent settings"""
+    try:
+        logger.info(f"📝 Updating consent for user {request.user_id}: {request.consent_type} = {request.granted}")
+
+        # In a real implementation, this would update a consent database
+        consent_id = str(uuid.uuid4())
+
+        # Log the consent change
+        consent_log = {
+            "consent_id": consent_id,
+            "user_id": request.user_id,
+            "consent_type": request.consent_type,
+            "granted": request.granted,
+            "details": request.consent_details,
+            "timestamp": datetime.now().isoformat(),
+            "ip_address": "system",  # Would be extracted from request in real implementation
+            "user_agent": "api_call"
+        }
+
+        # Store in database (mock implementation)
+        try:
+            service.logger_service.mongo_client[service.config.mongo_db]["consent_logs"].insert_one(consent_log)
+        except Exception as e:
+            logger.warning(f"Could not log consent change to database: {e}")
+
+        response = ConsentResponse(
+            user_id=request.user_id,
+            consent_type=request.consent_type,
+            granted=request.granted,
+            timestamp=datetime.now().isoformat(),
+            consent_id=consent_id
+        )
+
+        logger.info(f"✅ Consent updated for user {request.user_id}")
+        return response
+
+    except Exception as e:
+        logger.error(f"❌ Error updating consent: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Consent update failed: {str(e)}")
+
+@app.get("/agents/status")
+async def agents_status_endpoint(api_key: str = Depends(verify_api_key)):
+    """Get status of all available agents"""
+    try:
+        logger.info("🔍 Checking agent statuses")
+
+        # Get orchestrator status
+        orchestrator_status = orchestrator.get_available_agents()
+
+        # Get individual agent health checks
+        agent_health = {}
+        for agent_name, agent_info in orchestrator_status["available_agents"].items():
+            try:
+                agent = getattr(orchestrator, 'agents', {}).get(agent_name.lower().replace('_', ''))
+                if agent and hasattr(agent, 'health_check'):
+                    agent_health[agent_name] = agent.health_check()
+                else:
+                    agent_health[agent_name] = {"status": "unknown", "error": "Health check not available"}
+            except Exception as e:
+                agent_health[agent_name] = {"status": "error", "error": str(e)}
+
+        return {
+            "orchestrator": orchestrator_status,
+            "agent_health": agent_health,
+            "overall_status": "healthy" if all(
+                health.get("status") == "healthy"
+                for health in agent_health.values()
+            ) else "degraded",
+            "timestamp": datetime.now().isoformat()
+        }
+
+    except Exception as e:
+        logger.error(f"❌ Error getting agent statuses: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Agent status retrieval failed: {str(e)}")
+
+# =============================================================================
 # Docker and Deployment Configuration
 # =============================================================================
 

@@ -463,6 +463,7 @@ from typing import Dict, Any, List
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
 from agents.agent_registry import agent_registry
+from agents.agent_orchestrator import AgentOrchestrator
 from utils.logger import get_logger
 from reinforcement.replay_buffer import replay_buffer
 from reinforcement.reward_functions import get_reward_from_output
@@ -481,6 +482,9 @@ from tempfile import NamedTemporaryFile
 logger = get_logger(__name__)
 app = FastAPI(title="BHIV Core MCP Bridge", version="2.0.0")
 rl_context = RLContext()
+
+# Initialize Agent Orchestrator for intelligent routing
+agent_orchestrator = AgentOrchestrator()
 
 # Async MongoDB client
 mongo_client = motor.motor_asyncio.AsyncIOMotorClient(MONGO_CONFIG['uri'])
@@ -504,6 +508,7 @@ class TaskPayload(BaseModel):
     retries: int = 3
     fallback_model: str = "edumentor_agent"
     tags: List[str] = []
+    task_id: str = None
 
 class QueryPayload(BaseModel):
     query: str
@@ -513,7 +518,8 @@ class QueryPayload(BaseModel):
 
 async def handle_task_request(payload: TaskPayload) -> dict:
     """Handle task request with agent routing."""
-    task_id = str(uuid.uuid4())
+    # Use provided task_id or generate a new unique one
+    task_id = getattr(payload, 'task_id', None) or str(uuid.uuid4())
     start_time = datetime.now()
 
     print(f"\n🎯 [TASK START] Task ID: {task_id}")
@@ -526,66 +532,33 @@ async def handle_task_request(payload: TaskPayload) -> dict:
 
     agent_id = None  # Initialize agent_id to avoid UnboundLocalError
     try:
-        # Find appropriate agent based on task context
-        task_context = {
-            "task": "process",
-            "input": payload.input,
-            "keywords": [payload.agent, payload.input_type, *payload.tags],
-            "model": payload.agent,
+        # Use AgentOrchestrator for intelligent routing and intent classification
+        print(f"🎭 [AGENT ORCHESTRATOR] Processing query through orchestrator...")
+
+        # Prepare context for orchestrator
+        orchestrator_context = {
+            "query": payload.input,
+            "requested_agent": payload.agent,
             "input_type": payload.input_type,
             "tags": payload.tags,
-            "task_id": task_id
+            "task_id": task_id,
+            "file_path": payload.pdf_path
         }
-        print(f"🤖 [RL THINKING] Analyzing task context...")
-        agent_id = agent_registry.find_agent(task_context)
-        agent_config = agent_registry.get_agent_config(agent_id)
 
-        if payload.agent != agent_id:
-            print(f"🔄 [RL OVERRIDE] Requested: {payload.agent} → Selected: {agent_id}")
-        else:
-            print(f"✅ [RL CONFIRMED] Using requested agent: {agent_id}")
+        # Process through orchestrator
+        orchestrator_result = agent_orchestrator.process_query(payload.input, orchestrator_context)
 
-        if not agent_config:
-            print(f"❌ [ERROR] Agent config not found for {agent_id}")
-            logger.error(f"[MCP_BRIDGE] Agent config not found for {agent_id}")
-            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
-        
-        # Route to appropriate handler based on connection type
-        if agent_config['connection_type'] == 'python_module':
-            print(f"🐍 [PYTHON MODULE] Loading {agent_config['module_path']}.{agent_config['class_name']}")
-            module_path = agent_config['module_path']
-            class_name = agent_config['class_name']
-            module = importlib.import_module(module_path)
-            agent_class = getattr(module, class_name)
-            agent = agent_class()
-            input_path = payload.pdf_path if payload.pdf_path else payload.input
-            print(f"⚡ [PROCESSING] Running {agent_id} directly...")
-            result = agent.run(input_path, "", payload.agent, payload.input_type, task_id)
-        elif agent_config['connection_type'] == 'http_api':
-            endpoint = agent_config['endpoint']
-            print(f"🌐 [HTTP API] Calling {endpoint}")
-            headers = agent_config.get('headers', {})
-            request_payload = {
-                'query': payload.input,
-                'user_id': 'bhiv_core',
-                'task_id': task_id,
-                'input_type': payload.input_type,
-                'tags': payload.tags
-            }
-            if payload.pdf_path:
-                request_payload['file_path'] = payload.pdf_path
+        # Use the orchestrator result directly (it already contains all metadata)
+        result = orchestrator_result
+        agent_id = orchestrator_result.get("agent", payload.agent)
+        detected_intent = orchestrator_result.get("detected_intent", "unknown")
+        agent_logs = orchestrator_result.get("agent_logs", [])
+        processing_details = orchestrator_result.get("processing_details", {})
 
-            timeout = TIMEOUT_CONFIG.get(payload.input_type, TIMEOUT_CONFIG.get('default_timeout', 120))
-            print(f"📡 [API CALL] Sending request to {endpoint}...")
-            response = requests.post(endpoint, json=request_payload, headers=headers, timeout=timeout)
-            response.raise_for_status()
-            result = response.json()
-        else:
-            logger.warning(f"[MCP_BRIDGE] Unknown connection type for {agent_id}, using fallback")
-            from agents.stream_transformer_agent import StreamTransformerAgent
-            agent = StreamTransformerAgent()
-            input_path = payload.pdf_path if payload.pdf_path else payload.input
-            result = agent.run(input_path, "", payload.agent, payload.input_type, task_id)
+        print(f"🎯 [INTENT DETECTED] {detected_intent}")
+        print(f"🤖 [AGENT SELECTED] {agent_id}")
+        if agent_logs:
+            print(f"📋 [AGENT LOGS] {len(agent_logs)} steps recorded")
         
         # Enhanced logging
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -708,7 +681,8 @@ async def handle_task_with_file(
             input_type=input_type,
             retries=retries,
             fallback_model=fallback_model,
-            tags=tags.split(",") if tags else []
+            tags=tags.split(",") if tags else [],
+            task_id=str(uuid.uuid4())
         )
         
         result = await handle_task_request(payload)
@@ -719,39 +693,40 @@ async def handle_task_with_file(
 
 @app.post("/query-kb")
 async def query_knowledge_base(payload: QueryPayload):
-    """Handle Gurukul queries to the Qdrant Vedabase."""
+    """Handle Gurukul queries to the Qdrant Vedabase using AgentOrchestrator."""
     task_id = payload.task_id or str(uuid.uuid4())
     start_time = datetime.now()
     logger.info(f"[MCP_BRIDGE] Query KB Task ID: {task_id} | Query: {payload.query[:50]}... | Filters: {payload.filters} | Tags: {payload.tags}")
     health_status["total_requests"] += 1
 
     try:
-        task_context = {
-            "task": "semantic_search",
-            "keywords": ["knowledge_agent", "semantic_search", "vedabase", *payload.tags],
-            "model": "knowledge_agent",
+        # Use AgentOrchestrator for knowledge base queries
+        orchestrator_context = {
+            "query": payload.query,
+            "requested_agent": "knowledge_agent",
             "input_type": "text",
             "tags": payload.tags,
-            "task_id": task_id
+            "task_id": task_id,
+            "filters": payload.filters
         }
-        agent_id = agent_registry.find_agent(task_context)
-        agent_config = agent_registry.get_agent_config(agent_id)
-        
-        if not agent_config or agent_id != "knowledge_agent":
-            logger.error(f"[MCP_BRIDGE] KnowledgeAgent not found for task {task_id}")
-            raise HTTPException(status_code=404, detail="KnowledgeAgent not found")
-        
-        module_path = agent_config['module_path']
-        class_name = agent_config['class_name']
-        module = importlib.import_module(module_path)
-        agent_class = getattr(module, class_name)
-        agent = agent_class()
-        
-        result = agent.query(payload.query, payload.filters, task_id)
-        
+
+        orchestrator_result = agent_orchestrator.process_query(payload.query, orchestrator_context)
+        result = orchestrator_result.get("response", {})
+        agent_id = orchestrator_result.get("agent", "knowledge_agent")
+        detected_intent = orchestrator_result.get("detected_intent", "semantic_search")
+        agent_logs = orchestrator_result.get("agent_logs", [])
+
         processing_time = (datetime.now() - start_time).total_seconds()
         health_status["successful_requests"] += 1
         health_status["agent_status"][agent_id] = {"last_used": datetime.now().isoformat(), "status": "healthy"}
+
+        # Add orchestrator metadata
+        result.update({
+            "orchestrator_processed": True,
+            "detected_intent": detected_intent,
+            "agent_selected": agent_id,
+            "agent_logs": agent_logs
+        })
 
         # Log to MongoDB
         task_log_data = {
