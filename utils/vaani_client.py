@@ -57,8 +57,8 @@ class VaaniClient:
             self._authenticate()
 
     def _create_content_first(self, text: str, content_type: str = "tweet",
-                            language: str = "en") -> Optional[str]:
-        """Create content first as required by Vaani API"""
+                             language: str = "en") -> Optional[str]:
+        """Create content first as required by Vaani API - Based on documentation"""
         try:
             create_url = f"{self.base_url}/api/v1/content/create"
             payload = {
@@ -68,15 +68,34 @@ class VaaniClient:
                 "metadata": {"source": "bhiv_agent"}
             }
 
+            logger.info(f"📝 Creating content with type: {content_type}, language: {language}")
+            logger.info(f"📄 Content preview: {text[:100]}...")
+
             response = self.session.post(create_url, json=payload, timeout=30)
+
+            logger.info(f"📡 Content creation response status: {response.status_code}")
 
             if response.status_code == 200:
                 data = response.json()
                 content_id = data.get("content_id")
-                logger.info(f"✅ Content created with ID: {content_id}")
-                return content_id
+
+                if content_id:
+                    logger.info(f"✅ Content created successfully with ID: {content_id}")
+                    logger.info(f"📊 Content details: type={content_type}, language={language}")
+                    return content_id
+                else:
+                    logger.error("❌ Content creation response missing content_id")
+                    logger.error(f"📄 Full response: {data}")
+                    return None
             else:
-                logger.error(f"❌ Content creation failed: {response.status_code}")
+                # Log detailed error information
+                try:
+                    error_details = response.json()
+                    logger.error(f"❌ Content creation failed: {error_details}")
+                    logger.error(f"❌ Error detail: {error_details.get('detail', 'No detail provided')}")
+                except:
+                    logger.error(f"❌ Content creation failed (no JSON): {response.text[:500]}")
+
                 return None
 
         except Exception as e:
@@ -85,7 +104,7 @@ class VaaniClient:
 
     def generate_content(self, text: str, platforms: List[str] = None,
                         tone: str = "neutral", language: str = "en") -> Dict[str, Any]:
-        """Generate platform-specific content using Vaani"""
+        """Generate platform-specific content using Vaani - Based on API documentation"""
         self._ensure_authenticated()
 
         try:
@@ -94,7 +113,7 @@ class VaaniClient:
             if not content_id:
                 return {"error": "Failed to create content"}
 
-            # Generate platform content
+            # Use the exact API structure from documentation
             generate_url = f"{self.base_url}/api/v1/agents/generate-content"
             generate_payload = {
                 "content_id": content_id,
@@ -103,15 +122,38 @@ class VaaniClient:
                 "language": language
             }
 
-            generate_response = self.session.post(generate_url, json=generate_payload, timeout=60)
+            logger.info(f"📱 Generating content for platforms: {platforms or ['twitter', 'instagram', 'linkedin']}")
+            logger.info(f"🎭 Using tone: {tone}, language: {language}")
+
+            generate_response = self.session.post(
+                generate_url,
+                json=generate_payload,
+                timeout=60
+            )
+
+            logger.info(f"📡 Vaani generate-content response status: {generate_response.status_code}")
 
             if generate_response.status_code == 200:
                 result = generate_response.json()
                 logger.info("✅ Vaani content generation successful")
+
+                # Validate response structure matches documentation
+                if "generated_content" in result:
+                    logger.info(f"📦 Generated content for platforms: {list(result['generated_content'].keys())}")
+                else:
+                    logger.warning("⚠️ Response missing 'generated_content' field")
+
                 return result
             else:
-                logger.error(f"❌ Vaani content generation failed: {generate_response.status_code}")
-                return {"error": "Content generation failed"}
+                # Log detailed error information
+                try:
+                    error_details = generate_response.json()
+                    logger.error(f"❌ Vaani API error details: {error_details}")
+                    logger.error(f"❌ Error detail: {error_details.get('detail', 'No detail provided')}")
+                except:
+                    logger.error(f"❌ Vaani API error (no JSON): {generate_response.text[:500]}")
+
+                return {"error": f"Content generation failed with status {generate_response.status_code}"}
 
         except Exception as e:
             logger.error(f"❌ Vaani content generation error: {str(e)}")
@@ -119,7 +161,7 @@ class VaaniClient:
 
     def translate_content(self, text: str, target_languages: List[str],
                         tone: str = "neutral") -> Dict[str, Any]:
-        """Translate content using Vaani"""
+        """Translate content using Vaani - Based on API documentation"""
         self._ensure_authenticated()
 
         try:
@@ -128,7 +170,7 @@ class VaaniClient:
             if not content_id:
                 return {"error": "Failed to create content"}
 
-            # Translate content
+            # Use the exact API structure from documentation
             translate_url = f"{self.base_url}/api/v1/multilingual/translate"
             translate_payload = {
                 "content_id": content_id,
@@ -136,15 +178,38 @@ class VaaniClient:
                 "tone": tone
             }
 
-            translate_response = self.session.post(translate_url, json=translate_payload, timeout=60)
+            logger.info(f"🌐 Translating content to languages: {target_languages}")
+            logger.info(f"🎭 Using tone: {tone}")
+
+            translate_response = self.session.post(
+                translate_url,
+                json=translate_payload,
+                timeout=60
+            )
+
+            logger.info(f"📡 Vaani translate response status: {translate_response.status_code}")
 
             if translate_response.status_code == 200:
                 result = translate_response.json()
                 logger.info("✅ Vaani translation successful")
+
+                # Validate response structure
+                if "translations" in result or "translated_content" in result:
+                    logger.info(f"📦 Generated translations for languages: {target_languages}")
+                else:
+                    logger.warning("⚠️ Response missing translation fields")
+
                 return result
             else:
-                logger.error(f"❌ Vaani translation failed: {translate_response.status_code}")
-                return {"error": "Translation failed"}
+                # Log detailed error information
+                try:
+                    error_details = translate_response.json()
+                    logger.error(f"❌ Vaani translation API error details: {error_details}")
+                    logger.error(f"❌ Error detail: {error_details.get('detail', 'No detail provided')}")
+                except:
+                    logger.error(f"❌ Vaani translation API error (no JSON): {translate_response.text[:500]}")
+
+                return {"error": f"Translation failed with status {translate_response.status_code}"}
 
         except Exception as e:
             logger.error(f"❌ Vaani translation error: {str(e)}")
