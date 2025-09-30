@@ -416,8 +416,9 @@ curl http://localhost:8001/vaani/status
 
 ### 🤖 **Agent Orchestrator API (Port 8080)**
 
-The Agent Orchestrator provides intelligent agent routing and coordination with automatic intent classification.
+The Agent Orchestrator provides intelligent agent routing and coordination with automatic intent classification, EMS integration, and comprehensive monitoring.
 
+#### **Core Agent Processing**
 ```bash
 # 🎯 Intelligent Query Processing with Auto Agent Selection
 curl -X POST "http://localhost:8080/ask" \
@@ -430,9 +431,31 @@ curl -X POST "http://localhost:8080/ask" \
     "input_type": "text"
   }'
 
+# 📝 Feedback Collection for RL Improvement
+curl -X POST "http://localhost:8080/feedback" \
+  -H "X-API-Key: uniguru-dev-key-2025" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "trace_id": "trace-123",
+    "session_id": "session-456",
+    "user_id": "user123",
+    "rating": 5,
+    "feedback_text": "Very helpful response",
+    "useful": true
+  }'
+```
+
+#### **EMS Integration Endpoints**
+```bash
 # 🚨 System Alerts and Flagged Activities
-curl -X GET "http://localhost:8080/alerts?limit=5&flagged_only=true" \
+curl -X GET "http://localhost:8080/alerts?limit=10&flagged_only=true" \
   -H "X-API-Key: uniguru-dev-key-2025"
+
+# Response includes:
+# - Processing issues (low confidence, errors)
+# - System health alerts
+# - Employee activity flags
+# - Performance anomalies
 
 # 📋 User Consent Management
 # Get consent status
@@ -449,10 +472,39 @@ curl -X POST "http://localhost:8080/consent" \
     "granted": true,
     "consent_details": "User agreed to privacy policy v1.0"
   }'
+```
 
+#### **System Monitoring & Health**
+```bash
 # 🔍 Agent Health and Status
 curl -X GET "http://localhost:8080/agents/status" \
   -H "X-API-Key: uniguru-dev-key-2025"
+
+# 🏥 System Health Check
+curl -X GET "http://localhost:8080/health" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+
+# 📊 Service Statistics
+curl -X GET "http://localhost:8080/stats" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+```
+
+#### **Advanced Features**
+```bash
+# 🧪 Comprehensive Smoke Test
+curl -X POST "http://localhost:8080/test/smoke" \
+  -H "X-API-Key: uniguru-dev-key-2025"
+
+# 🔗 BHIV Core Integration
+curl -X POST "http://localhost:8080/bhiv/compose" \
+  -H "X-API-Key: uniguru-dev-key-2025" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "query": "Explain quantum computing",
+    "session_id": "bhiv-session",
+    "user_id": "bhiv-user",
+    "voice_enabled": true
+  }'
 ```
 
 ### Web Interface (port 8003)
@@ -797,6 +849,29 @@ python cli_runner.py explain "test query" vedas_agent
 ### 🤖 **Advanced Multi-Agent System**
 - **Specialized Agents**: VedasAgent, EduMentorAgent, WellnessAgent, KnowledgeAgent, ImageAgent, AudioAgent
 - **Intelligent Agent Selection**: RL-powered routing based on query context and content type
+- **Agent Orchestrator**: Centralized intelligent routing with intent classification
+- **EMS Integration**: Employee monitoring system with alerts and consent management
+
+### 🏢 **EMS (Employee Management System) Features**
+- **Alert System**: Real-time monitoring of system issues and employee activities
+- **Consent Management**: GDPR-compliant privacy consent tracking
+- **Activity Logging**: Comprehensive logging of all agent interactions
+- **Performance Monitoring**: System health checks and performance metrics
+- **Compliance Tracking**: Privacy policy adherence and data processing consent
+
+### 🔧 **Production-Ready Infrastructure**
+- **Docker Deployment**: Complete containerization with docker-compose
+- **Health Monitoring**: Multi-level health checks for all components
+- **Error Handling**: Comprehensive error recovery and fallback mechanisms
+- **API Documentation**: Complete OpenAPI/Swagger documentation
+- **Testing Suite**: Comprehensive smoke tests and integration tests
+
+### 📊 **Enhanced Analytics & Monitoring**
+- **Real-time Metrics**: Performance tracking and system statistics
+- **User Feedback**: RL-powered improvement based on user ratings
+- **Trace Logging**: Complete request tracing for debugging and analytics
+- **MongoDB Integration**: Persistent logging and analytics storage
+- **Reinforcement Learning**: Adaptive system improvement based on feedback
 - **Agent-Specific Capabilities**: Each agent optimized for its domain with Vaani tool integration
 
 ### 🌐 **Vaani Sentinel X Integration**
